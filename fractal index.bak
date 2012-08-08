@@ -1,0 +1,9 @@
+#lang racket
+
+(provide generate-fractal)
+
+(define (generate-fractal height width type . args)
+  (case type
+    ('random (generate-random-fractal width height args))
+    )
+  )

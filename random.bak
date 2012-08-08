@@ -1,0 +1,6 @@
+#lang racket
+
+(provide generate-random-fractal)
+
+(define (generate-random-fractal width height . args)
+  )

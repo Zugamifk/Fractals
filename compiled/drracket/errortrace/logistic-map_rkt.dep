@@ -1,0 +1,1 @@
+("5.2" ("6a96b5651a1568a1d01c99a5722ee85102f9cdbc" . "88409a9b5d0f2de0d992a9dad31d130efa44f637") (collects #"racket" #"main.rkt") (collects #"errortrace" #"errortrace-key.rkt") (collects #"graphics" #"graphics.rkt") (collects #"racket" #"lang" #"reader.rkt"))

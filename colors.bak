@@ -1,0 +1,211 @@
+#lang racket
+
+(require graphics/graphics)
+(provide to-rgb 
+         rainbow-colors
+         generate-log-to-green
+         generate-linear
+         generate-rainbow-cycle
+         generate-to-black
+         generate-2-color)
+
+(define rainbow-colors (list
+                     (make-rgb 1 1 1)
+                     (make-rgb 0.8 0.6 0.6)
+                     (make-rgb 0.8 0.4 0.4)
+                     (make-rgb 0.8 0.2 0.2)
+                     (make-rgb 0.8 0.4 0.2)
+                     (make-rgb 0.8 0.6 0.2)
+                     (make-rgb 0.8 0.8 0.2)
+                     (make-rgb 0.6 0.8 0.4)
+                     (make-rgb 0.4 0.6 0.6)
+                     (make-rgb 0.2 0.4 0.8)
+                     (make-rgb 0.2 0.2 0.8)))
+(define (to-rgb r g b)
+  (make-rgb (/ r 255)
+            (/ g 255)
+            (/ b 255)))
+  
+(define (scale-color color scale)
+  (make-rgb (* (rgb-red color) scale)
+            (* (rgb-green color) scale)
+            (* (rgb-blue color) scale))
+  )
+
+(define (add-colors color1 color2)
+  (make-rgb (+ (rgb-red color1) (rgb-red color2))
+            (+ (rgb-green color1) (rgb-green color2))
+            (+ (rgb-blue color1) (rgb-blue color2)))
+  )
+  
+(define (print-color color)
+  (if (null? color)
+      '()
+      (begin
+        (display (rgb-red color))
+        (display " : ")
+        (display (rgb-green color))
+        (display " : ")
+        (display (rgb-blue color))
+        (newline)))
+  )
+  
+(define const
+  (lambda (c)
+    c))
+
+(define (scale-change s)
+  (lambda (c)
+    (* s c)))
+
+(define (exp-change s e)
+  (define (pow n e total)
+    (cond ((= e 0) 1)
+          ((= e 1) n)
+          (else (pow n (- e 1) (* total n)))))
+  (lambda (c)
+    ((scale-change (pow s e 1)) c))
+  )
+
+(define (reverse-exp s e)
+  (define (pow n e)
+    (cond ((= e 0) 1)
+          ((= e 1) n)
+          (else (* n (pow n (- e 1))))))
+  (lambda (c)
+    (- 1 ((scale-change (pow s e)) c)))
+  )
+
+(define (generate-next-step curr lr lg lb)
+  (let ((r (car curr))
+        (g (cadr curr))
+        (b (caddr curr)))
+        (list (lr r) (lg g) (lb b)))
+  )
+                                             
+(define (generate-log-to-green n)
+  (define (iter n colors curr)
+;    (display curr)
+;    (display " ")
+;    (display n)
+;    (newline)
+    (cond ((= n 0) colors)
+          (else (let* ((new (generate-next-step curr
+                                                const
+                                                (exp-change 0.996 (+ n 1))
+                                                const))
+                       (r (car new))
+                       (g (cadr new))
+                       (b (caddr new)))
+                  (iter (- n 1)
+                        (cons (make-rgb r g b) colors)
+                        new)))))
+  (iter n '() (list 0 1 0))
+  )
+
+(define (generate-cycle length start-color rl gl bl)
+  (define (iter n colors curr)
+    (display curr)
+    (display " ")
+    (display n)
+    (newline)
+    
+    (cond ((= n 0) colors)
+          (else (let* ((new (generate-next-step curr rl gl bl))
+                       (r (car new))
+                       (g (cadr new))
+                       (b (caddr new)))
+                  (iter (- n 1)
+                        (cons (make-rgb r g b) colors)
+                        new)))))
+  (iter length '() start-color)
+  )
+
+(define (reverse-list l new)
+ ; (display l)
+;  (newline)
+  (cond ((null? l) new)
+        (else (reverse-list (cdr l) (cons (car l) new)))
+        )
+  )
+
+(define (alter-list colors mod)
+  (define (iter remaining new-list n)
+    (cond ((null? remaining) new-list)
+          (else (iter (cdr remaining) (cons (mod (car colors) n) new-list) (+ n 1)))
+          )
+    )
+  (reverse-list (iter colors '() 0) '()))
+                  
+
+(define (generate-linear n color scale)
+  (generate-cycle n color (scale-change scale) (scale-change scale) (scale-change scale))
+  )
+
+(define (generate-to-black n color scale)
+  (reverse-list
+   (generate-cycle n color (scale-change scale) (scale-change scale) (scale-change scale))
+   '())
+  )
+  
+(define (generate-2-color n color1 color2)
+  (letrec ((step (/ 1 n))
+           (combine (lambda (result mod)
+                      (print-color (car result))
+                      (if (< 1 mod)
+                          result
+                          (combine (cons (add-colors (scale-color color1 (- 1 mod))
+                                                     (scale-color color2 mod))
+                                         result)
+                                   (+ mod step)
+                                   )
+                          ))))
+    (combine (cons '() '()) step))
+  )
+                                         
+    
+
+(define (generate-rainbow-cycle n)
+  (define (get-color n colors)
+    (if (= n 0)
+        (car colors)
+        (get-color (- n 1) (cdr colors))
+        )
+    )
+  (define (fill n l)
+    (if (< n 0)
+        l
+        (fill (- n 1) (cons (get-color (remainder n 10) (cdr rainbow-colors)) l))
+        )
+    )
+  
+  (define i 0)
+  (define (counter)
+    (set! i (+ i 1)))
+  
+  (map (lambda (c)
+         (counter)
+         (make-rgb (* (- 1 (/ (- i 1) n)) (rgb-red c))
+                   (* (- 1 (/ (- i 1) n)) (rgb-green c))
+                   (* (- 1 (/ (- i 1) n)) (rgb-blue c))))
+         (fill n '()))
+  )
+; =================================
+; color lerping function, takes different args, returns a lambda
+; ================================
+
+(define (lerp max-depth color1 color2)
+  (let ((red-inc (- color2 color1))
+         (blue-inc (- color2 color1))
+         (green-inc (- color2 color1)))
+    (lambda (depth)
+      (let ((factor (/ depth max-depth)))
+        (make-rgb 
+         (+ (rgb-red color1) (* red-inc factor))
+         (+ (rgb-blue color1) (* blue-inc factor))
+         (+ (rgb-green color1) (* green-inc factor)))
+        )
+      )
+    )
+  )
+                      

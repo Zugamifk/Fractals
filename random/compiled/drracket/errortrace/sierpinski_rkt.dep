@@ -1,0 +1,1 @@
+("5.2" ("9602781ca34fee6e531fb89bb3351afc5dca4b75" . "0d9f017a8f60a6e6c1b48a2a23e9875f5f2a20b7") (collects #"racket" #"main.rkt") (collects #"errortrace" #"errortrace-key.rkt") #"C:\\Users\\Limez\\Dropbox\\Scheme\\Fractals\\random\\random-res.rkt" (collects #"graphics" #"graphics.rkt") (collects #"racket" #"lang" #"reader.rkt"))

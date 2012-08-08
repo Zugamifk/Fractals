@@ -1,0 +1,8 @@
+#lang racket
+
+(define (make-complex real imaginary)
+  (cons real imaginary))
+(define (get-real num)
+  (car num))
+(define (get-imag num)
+  (cdr num))
