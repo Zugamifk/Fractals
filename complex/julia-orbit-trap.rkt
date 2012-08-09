@@ -38,18 +38,18 @@
     (define i (cdr z))
 
     (cond ((> n depth) distance)
-          ((< n 10) (iter (func z c) (+ n 1) (pickover distance r i)))
+          ;((< n 10) (iter (func z c) (+ n 1) (origin-orbit distance z)))
           ((> (+ (* r r) (* i i)) (* limit limit)) distance)
-          (else (iter (func z c) (+ n 1) (pickover distance r i)))
+          (else (iter (func z c) (+ n 1) (origin-orbit distance z)))
           )
     )
 
   ; Get the color of the pixel
-  (define dis (iter z 0 2))
-  (define col (- 1 (/ (+ (log-b 10 (* dis 5)) 1) 2)))
+  (define dis (/ (iter z 0 2) 2))
+  ;(define col (- 1 (/ (+ (log-b 10 (* dis 5)) 1) 2)))
   (display dis)
   (newline)
-  (define color (color-func col)) 
+  (define color (color-func dis)) 
   
   
   ; Draw the pixel

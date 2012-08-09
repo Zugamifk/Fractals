@@ -10,7 +10,8 @@
          generate-2-color
          lerp
          plerp
-         multi-lerp)
+         multi-lerp
+         multi-lerp-deets)
 
 (define rainbow-colors (list
                      (make-rgb 0 0 0)
@@ -242,5 +243,44 @@
       (* num (- factor (iter 0))))
     (define color (get-color factor))
     ((lerp (car color) (cadr color)) (small-fac))
+    )
+  )
+
+(define (multi-lerp-deets colors num)
+  (define index-inc (/ 1 (- num 1)))
+  (define (get-color n)
+    (define (iter mul c)
+      (if (>= mul n)
+          c
+          (iter (+ mul index-inc) (cdr c))))
+    (iter index-inc colors)) 
+  (lambda (factor)
+  ;  (display factor)
+    (define (get-scale s f)
+      (display ".")
+      (cond ((= 0 s) 0)
+            ((< f 0.0001) 0)
+            ((< f index-inc) (get-scale (- s 0.2) (/ f index-inc)))
+            (else (begin
+                    (set! factor f)
+                    s))))
+    (define color-scale (get-scale 1 factor))
+  ;  (display " SCALED: ")
+  ;  (display factor)
+    (display " Color Scale: ")
+    (display color-scale)
+    
+    (define (small-fac)
+      (define (iter f)
+        (if (> (+ f index-inc) factor)
+            f
+            (iter (+ f index-inc))))
+      (* num (- factor (iter 0))))
+  ;  (display " Small: ")
+  ;  (display (small-fac))
+    (newline)
+    (define color (get-color factor))
+    ((lerp (scale-color (car color) color-scale)
+           (scale-color (cadr color) color-scale)) (small-fac))
     )
   )
