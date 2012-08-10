@@ -1,4 +1,4 @@
-#!racket
+#lang racket
 (require graphics/graphics)
 (require "complex-res.rkt")
 (provide make-julia-ot)

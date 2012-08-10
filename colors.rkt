@@ -2,6 +2,7 @@
 
 (require graphics/graphics)
 (provide to-rgb 
+         average-colors
          rainbow-colors
          generate-log-to-green
          generate-linear
@@ -42,6 +43,13 @@
             (+ (rgb-blue color1) (rgb-blue color2)))
   )
   
+(define (average-colors colors n) 
+ (foldl add-colors (make-rgb 0 0 0) 
+        (map (lambda (c)
+               (scale-color c (/ 1 n)))
+             colors))
+  )
+
 (define (print-color color)
   (if (null? color)
       '()

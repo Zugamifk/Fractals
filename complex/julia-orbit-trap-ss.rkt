@@ -1,7 +1,8 @@
 #!racket
 (require graphics/graphics)
 (require "complex-res.rkt")
-(provide make-julia-ot)
+(require "../colors.rkt")
+(provide make-julia-ot-ss)
 
 ; Pickover Stalks
  (define (pickover distance r i)
@@ -27,16 +28,22 @@
   )
   
 ; main generating function
-(define (for-each-pixel x y window width height depth color-func limit zoom c )
+(define (for-each-pixel x y window width height depth color-func limit zoom c ss)
   
   ; Get the coordinates of Z in pixel space
-  (define z (zoom x y width height))
+  (define z (build-list ss (lambda (xi)
+                             (build-list ss (lambda (yi)
+                                              (zoom (+ (* x ss) xi)
+                                                    (+ (* y ss) yi)
+                                                    (* width ss)
+                                                    (* height ss)))))))
 
+  (display z)
+  (newline)
   ; iterate the recurion until it escapes, to a maximum of depth times
   (define (iter z n distance)
     (define r (car z))
     (define i (cdr z))
-
     (cond ((> n depth) distance)
           ;((< n 10) (iter (func z c) (+ n 1) (origin-orbit distance z)))
           ((> (+ (* r r) (* i i)) (* limit limit)) distance)
@@ -45,12 +52,19 @@
     )
 
   ; Get the color of the pixel
-  (define dis (/ (iter z 0 2) 2))
-  ;(define col (- 1 (/ (+ (log-b 10 (* dis 5)) 1) 2)))
+  (define dis (map (lambda (l)
+                     (map (lambda (zp)
+                            (/ (iter zp 0 2) 2)) l))
+                   z))
+  (display "MAP: ")
   (display dis)
   (newline)
-  (define color (color-func dis)) 
-  
+  ;(define col (- 1 (/ (+ (log-b 10 (* dis 5)) 1) 2)))
+  (define color (average-colors
+                 (map (lambda (l)
+                        (average-colors 
+                         (map color-func l)
+                         ss)) dis) ss))
   
   ; Draw the pixel
   ((draw-pixel window) (make-posn x y) color)
@@ -59,13 +73,13 @@
   (if (= x 0)
       ((draw-pixel window) (make-posn x y) (make-rgb 1 0 0))
       '())
-  (cond ((= x width) (for-each-pixel 0 (+ y 1) window width height depth color-func limit zoom c))
+  (cond ((= x width) (for-each-pixel 0 (+ y 1) window width height depth color-func limit zoom c ss))
         ((= y height) '())
-        (else (for-each-pixel (+ x 1) y window width height depth color-func limit zoom c)))
+        (else (for-each-pixel (+ x 1) y window width height depth color-func limit zoom c ss)))
   )
 
-(define (make-julia-ot window width height zoom depth color-func limit c )
+(define (make-julia-ot-ss window width height zoom depth color-func limit c ss)
   (display c)
   (newline)
-  (for-each-pixel 0 0 window width height depth color-func limit zoom c)
+  (for-each-pixel 0 0 window width height depth color-func limit zoom c ss)
   )
