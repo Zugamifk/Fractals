@@ -2,15 +2,34 @@
 
 (require graphics/graphics)
 (provide to-rgb 
+         average-colors
          rainbow-colors
+         primaries
          generate-log-to-green
          generate-linear
          generate-rainbow-cycle
          generate-to-black
-         generate-2-color)
+         generate-2-color
+         lerp
+         plerp
+         multi-lerp
+         multi-lerp-deets)
+
+(define primaries (list
+                   (make-rgb 0 0 0)
+                   (make-rgb 0.8 0.2 0.2)
+                   (make-rgb 0.6 0.4 0.2)
+                   (make-rgb 0.4 0.6 0.2)
+                   (make-rgb 0.2 0.8 0.2)
+                   (make-rgb 0.2 0.6 0.4)
+                   (make-rgb 0.2 0.4 0.6)
+                   (make-rgb 0.2 0.2 0.8)
+                   (make-rgb 0.4 0.2 0.6)
+                   (make-rgb 0.6 0.2 0.8)))
 
 (define rainbow-colors (list
-                     (make-rgb 1 1 1)
+                     (make-rgb 0 0 0)
+                     (make-rgb 0.2 0.2 0.8)
                      (make-rgb 0.8 0.6 0.6)
                      (make-rgb 0.8 0.4 0.4)
                      (make-rgb 0.8 0.2 0.2)
@@ -38,6 +57,13 @@
             (+ (rgb-blue color1) (rgb-blue color2)))
   )
   
+(define (average-colors colors n) 
+ (foldl add-colors (make-rgb 0 0 0) 
+        (map (lambda (c)
+               (scale-color c (/ 1 n)))
+             colors))
+  )
+
 (define (print-color color)
   (if (null? color)
       '()
@@ -194,18 +220,89 @@
 ; color lerping function, takes different args, returns a lambda
 ; ================================
 
-(define (lerp max-depth color1 color2)
-  (let ((red-inc (- color2 color1))
-         (blue-inc (- color2 color1))
-         (green-inc (- color2 color1)))
-    (lambda (depth)
-      (let ((factor (/ depth max-depth)))
-        (make-rgb 
-         (+ (rgb-red color1) (* red-inc factor))
-         (+ (rgb-blue color1) (* blue-inc factor))
-         (+ (rgb-green color1) (* green-inc factor)))
-        )
+(define (lerp color1 color2)
+  (let ((red-inc (- (rgb-red color2) (rgb-red color1)))
+         (blue-inc (- (rgb-blue color2) (rgb-blue color1)))
+         (green-inc (- (rgb-green color2) (rgb-green color1))))
+    (lambda (factor)
+      (make-rgb
+       (+ (rgb-red color1) (* red-inc factor))
+       (+ (rgb-green color1) (* green-inc factor))
+       (+ (rgb-blue color1) (* blue-inc factor)))
       )
     )
   )
-                      
+            
+(define (plerp color1 color2)
+  (let ((red-inc (- (rgb-red color2) (rgb-red color1)))
+         (blue-inc (- (rgb-blue color2) (rgb-blue color1)))
+         (green-inc (- (rgb-green color2) (rgb-green color1))))
+    (lambda (factor)
+      (make-rgb
+       (+ (rgb-red color1) (* red-inc factor factor))
+       (+ (rgb-green color1) (* green-inc factor factor))
+       (+ (rgb-blue color1) (* blue-inc factor factor)))
+      )
+    )
+  )
+
+(define (multi-lerp colors num)
+  (define index-inc (/ 1 (- num 1)))
+  (define (get-color n)
+    (define (iter mul c)
+      (if (>= mul n)
+          c
+          (iter (+ mul index-inc) (cdr c))))
+    (iter index-inc colors)) 
+  (lambda (factor)
+    (display factor)
+    (newline)
+    (define (small-fac)
+      (define (iter f)
+        (if (> (+ f index-inc) factor)
+            f
+            (iter (+ f index-inc))))
+      (* num (- factor (iter 0))))
+    (define color (get-color factor))
+    ((lerp (car color) (cadr color)) (small-fac))
+    )
+  )
+
+(define (multi-lerp-deets colors num)
+  (define index-inc (/ 1 (- num 1)))
+  (define (get-color n)
+    (define (iter mul c)
+      (if (>= mul n)
+          c
+          (iter (+ mul index-inc) (cdr c))))
+    (iter index-inc colors)) 
+  (lambda (factor)
+  ;  (display factor)
+    (define (get-scale s f)
+      (display ".")
+      (cond ((= 1 s) 1)
+            ((< f 0.0001) 1)
+            ((< f index-inc) (get-scale (+ s 0.2) (/ f index-inc)))
+            (else (begin
+                    (set! factor f)
+                    s))))
+    (define color-scale (get-scale 0 factor))
+  ;  (display " SCALED: ")
+  ;  (display factor)
+    (display " Color Scale: ")
+    (display color-scale)
+    
+    (define (small-fac)
+      (define (iter f)
+        (if (> (+ f index-inc) factor)
+            f
+            (iter (+ f index-inc))))
+      (* num (- factor (iter 0))))
+  ;  (display " Small: ")
+  ;  (display (small-fac))
+    (newline)
+    (define color (get-color factor))
+    ((lerp (scale-color (car color) color-scale)
+           (scale-color (cadr color) color-scale)) (small-fac))
+    )
+  )

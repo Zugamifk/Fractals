@@ -7,16 +7,24 @@
 (require "logistic-map.rkt")
 (require "bifurcation.rkt")
 
-(define (random-complex d)
-  (define random-real (lambda ()
-                        (/ (- (random (* 2 d)) d)
-                        d)))
-  (cons (random-real) (random-real)))
+(define port (open-input-file "pts.csv"))
+(port-count-lines! port)
+(define (rp) (random 9550))
+(define (get-vals)
+  (define (iter n)
+    (cond ((eof-object? port) (get-vals))
+          ((= n 0) (read-line port))
+          (else (begin 
+                  (read-line port)
+                  (iter (- n 1))))))
+  (iter (rp)))
 
-(define DEPTH 300)
-(define ZOOM 0.5)
+(display (get-vals))
+
+(define DEPTH 1000)
+(define ZOOM 0.7)
 ;(define colors-list (generate-2-color DEPTH (make-rgb 0.8 0.5 0.02) (make-rgb 0.52 0.15 0.08 )))
-(define color-func (multi-lerp-deets rainbow-colors 10));(make-rgb 1 1 0) (make-rgb 0.52 0.15 0.08 )))
+(define color-func (circles summer 6));(make-rgb 1 1 0) (make-rgb 0.52 0.15 0.08 )))
 
 
 ; Probabilities, Number of dots per iteration, Number of Iterations, Color scale, Probability scale
@@ -27,13 +35,13 @@
 
 ; Number of iterations, List of colors, Distance breakoff limit
 ;(define sample-julia-args (list DEPTH colors-list (cons -0.533 0.524)));(random-complex 100)(cons 0.369269 0.152416)
-(define sample-julia-args (list DEPTH color-func (cons (/ -560 807) (/ -89 269)) 2))
+(define sample-julia-args (list DEPTH color-func (cons (/ -998 807) (/ 23 269)) 4))
 ; Cool Julia Sets
 ;(define sample-julia-args (list DEPTH colors-list (cons 0.369269 0.152416)))
 
 
-(define WIDTH 1000)
-(define HEIGHT 1000)
+(define WIDTH 1650)
+(define HEIGHT 1024)
 
 (define (graphics-errors err)
   (cond ((eq? err 'graphics-not-open)
@@ -48,15 +56,16 @@
       )
   )
 
-(define (set-zoom tr zoom)
+(define (set-zoom zoom)
   (lambda (x y w h)
-    (let ((hr (/ h w))
+    (let (
+          (hr (/ h w))
           (wr (/ w h))
           (div-x (* w 0.5))
           (div-y (* h 0.5)))
-      (make-complex (* (- x div-x) (/ 2 div-x ) zoom)
-                    (* (- y div-y) (/ 2 div-y ) zoom)))
-    )
+      (make-complex (* (- x div-x) (/ 2 div-x ) zoom (max wr 1))
+                    (* (- y div-y) (/ 2 div-y ) zoom (max hr 1)))
+    ))
   )
 
 (define make-window
@@ -69,7 +78,7 @@
 
     ((flip-viewport window))
     
-    (generate-fractal window WIDTH HEIGHT (set-zoom 0 ZOOM) 'complex 'julia-orbit-trap-ss sample-julia-args)
+    (generate-fractal window WIDTH HEIGHT (set-zoom ZOOM) 'complex 'julia-orbit-trap-ss sample-julia-args)
     
    ; (copy-viewport pix window)
     ;(close-graphics)

@@ -1,9 +1,11 @@
 #lang racket
 
 (require graphics/graphics)
+(require plot/utils)
 (provide to-rgb 
          average-colors
          rainbow-colors
+         primaries
          generate-log-to-green
          generate-linear
          generate-rainbow-cycle
@@ -12,10 +14,44 @@
          lerp
          plerp
          multi-lerp
-         multi-lerp-deets)
+         multi-lerp-deets
+         circles
+         natural
+         autumn
+         blue-pink
+         summer)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (to-rgb r g b)
+  (make-rgb (/ r 255)
+            (/ g 255)
+            (/ b 255)))
+
+(define (from-hex r1 r2 g1 g2 b1 b2)
+  (define (from n1 n2)
+    (+ (* n1 16) n2))
+  (to-rgb (from r1 r2)
+          (from g1 g2)
+          (from b1 b2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primaries (list
+                   (make-rgb 0 0 0)
+                   (make-rgb 0.8 0.2 0.2)
+                   (make-rgb 0.6 0.4 0.2)
+                   (make-rgb 0.4 0.6 0.2)
+                   (make-rgb 0.2 0.8 0.2)
+                   (make-rgb 0.2 0.6 0.4)
+                   (make-rgb 0.2 0.4 0.6)
+                   (make-rgb 0.2 0.2 0.8)
+                   (make-rgb 0.4 0.2 0.6)
+                   (make-rgb 0.6 0.2 0.8)))
 
 (define rainbow-colors (list
                      (make-rgb 0 0 0)
+                     (make-rgb 0.2 0.2 0.8)
                      (make-rgb 0.8 0.6 0.6)
                      (make-rgb 0.8 0.4 0.4)
                      (make-rgb 0.8 0.2 0.2)
@@ -26,11 +62,57 @@
                      (make-rgb 0.4 0.6 0.6)
                      (make-rgb 0.2 0.4 0.8)
                      (make-rgb 0.2 0.2 0.8)))
-(define (to-rgb r g b)
-  (make-rgb (/ r 255)
-            (/ g 255)
-            (/ b 255)))
-  
+
+(define natural (list
+             (from-hex 5 10 5 4 3 8)
+             (from-hex 9 9 6 5 4 2)
+             (from-hex 10 8 11 2 7 2)
+             (from-hex 2 6 1 15 1 11)
+             (from-hex 8 5 7 6 3 2)
+             (from-hex 4 1 0 14 0 0)
+           ;  (from-hex 11 15 12 6 12 12)
+             ))
+         
+(define autumn (list
+                (from-hex 4 1 0 14 0 0)
+                (from-hex 9 10 2 12 0 0)
+                (from-hex 5 5 2 9 0 10)
+                (from-hex 2 4 1 0 0 4)
+                (from-hex 15 10 12 5 5 2)
+                (from-hex 15 15 8 7 0 0)
+                (from-hex 9 9 6 1 1 3)
+                ))
+                
+(define blue-pink (list
+                (from-hex 2 5 3 9 4 4)
+                (from-hex 3 1 5 12 7 8)
+                (from-hex 9 10 10 2 12 13)
+                (from-hex 3 5 4 6 5 2)
+                (from-hex 14 2 13 7 13 13)
+                (from-hex 15 15 4 3 5 11)
+                (from-hex 2 4 2 12 3 0)
+                ))
+
+(define summer (list
+                (from-hex 1 12 1 11 1 8)
+                (from-hex 1 8 2 2 1 9)
+                (from-hex 4 2 5 2 3 7)
+                (from-hex 1 4 0 15 1 0)
+                (from-hex 14 12 9 8 1 6)
+                (from-hex 15 15 15 15 2 9)
+                (from-hex 4 5 5 1 0 0)
+                ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (clamp n)
+  (cond ((= (max 0 n) 0) 0)
+        ((= (min 1 n) 1) 1)
+        (else n)))
+(define (clamp-color r g b)
+  (make-rgb (clamp r)
+            (clamp g)
+            (clamp b)))
+
 (define (scale-color color scale)
   (make-rgb (* (rgb-red color) scale)
             (* (rgb-green color) scale)
@@ -38,9 +120,9 @@
   )
 
 (define (add-colors color1 color2)
-  (make-rgb (+ (rgb-red color1) (rgb-red color2))
-            (+ (rgb-green color1) (rgb-green color2))
-            (+ (rgb-blue color1) (rgb-blue color2)))
+  (clamp-color (+ (rgb-red color1) (rgb-red color2))
+               (+ (rgb-green color1) (rgb-green color2))
+               (+ (rgb-blue color1) (rgb-blue color2)))
   )
   
 (define (average-colors colors n) 
@@ -266,13 +348,13 @@
   ;  (display factor)
     (define (get-scale s f)
       (display ".")
-      (cond ((= 0 s) 0)
-            ((< f 0.0001) 0)
-            ((< f index-inc) (get-scale (- s 0.2) (/ f index-inc)))
+      (cond ((= 1 s) 1)
+            ((< f 0.0001) 1)
+            ((< f index-inc) (get-scale (+ s 0.2) (/ f index-inc)))
             (else (begin
                     (set! factor f)
                     s))))
-    (define color-scale (get-scale 1 factor))
+    (define color-scale (get-scale 0 factor))
   ;  (display " SCALED: ")
   ;  (display factor)
     (display " Color Scale: ")
@@ -290,5 +372,19 @@
     (define color (get-color factor))
     ((lerp (scale-color (car color) color-scale)
            (scale-color (cadr color) color-scale)) (small-fac))
+    )
+  )
+
+(define (circles colors num)
+  (define index-inc (/ 1 (- num 1)))
+  (define min (expt 0.1 (- num 1)))
+  (define (get-color c f)
+    (cond
+      ((null? c) (get-color colors f))
+      ((< f min) (car colors))
+      ((< f index-inc) (get-color (cdr c) (/ f index-inc)))
+      (else (car c))))
+  (lambda (factor)
+    (get-color colors factor)
     )
   )

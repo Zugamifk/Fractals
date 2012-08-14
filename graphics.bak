@@ -13,9 +13,11 @@
                         d)))
   (cons (random-real) (random-real)))
 
-(define DEPTH 500)
+(define DEPTH 300)
 (define ZOOM 0.5)
-(define colors-list (generate-2-color DEPTH (make-rgb 0 0 0) (make-rgb 1 0.2 0 )))
+;(define colors-list (generate-2-color DEPTH (make-rgb 0.8 0.5 0.02) (make-rgb 0.52 0.15 0.08 )))
+(define color-func (multi-lerp-deets rainbow-colors 11));(make-rgb 1 1 0) (make-rgb 0.52 0.15 0.08 )))
+
 
 ; Probabilities, Number of dots per iteration, Number of Iterations, Color scale, Probability scale
 (define sample-sierpinski-args (list (list 0 100 100 100) 10 10 0.8 0.99))
@@ -25,13 +27,13 @@
 
 ; Number of iterations, List of colors, Distance breakoff limit
 ;(define sample-julia-args (list DEPTH colors-list (cons -0.533 0.524)));(random-complex 100)(cons 0.369269 0.152416)
-
+(define sample-julia-args (list DEPTH color-func (cons (/ 108 269) (/ 265 807)) 2))
 ; Cool Julia Sets
-(define sample-julia-args (list DEPTH colors-list 2 (cons 0.369269 0.152416)))
+;(define sample-julia-args (list DEPTH colors-list (cons 0.369269 0.152416)))
 
 
-(define WIDTH 600)
-(define HEIGHT 600)
+(define WIDTH 1000)
+(define HEIGHT 1000)
 
 (define (graphics-errors err)
   (cond ((eq? err 'graphics-not-open)
@@ -48,7 +50,8 @@
 
 (define (set-zoom tr zoom)
   (lambda (x y w h)
-    (let ((hr (/ h w))
+    (let (
+           (hr (/ h w))
           (wr (/ w h))
           (div-x (* w 0.5))
           (div-y (* h 0.5)))
@@ -67,7 +70,7 @@
 
     ((flip-viewport window))
     
-    (generate-fractal window WIDTH HEIGHT (set-zoom 0 ZOOM) 'complex 'julia sample-julia-args)
+    (generate-fractal window WIDTH HEIGHT (set-zoom 0 ZOOM) 'complex 'julia-orbit-trap-ss sample-julia-args)
     
    ; (copy-viewport pix window)
     ;(close-graphics)
